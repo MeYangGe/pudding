@@ -1,10 +1,9 @@
 #!/bin/sh
-PORT=${PORT:-443}
-UUID=${UUID:-aacdae76-688f-4746-9468-df13708f7104}
-REALITY_PRIVATE_KEY=${REALITY_PRIVATE_KEY:-KNu8j493DpynCz81fHguz2su6R0KZD38LfscfdP_Vko}
-REALITY_SNI=${REALITY_SNI:-www.microsoft.com}
-REALITY_DEST=${REALITY_DEST:-www.microsoft.com:443}
-REALITY_SHORT_ID=${REALITY_SHORT_ID:-6b36dc2b7df3ac0a}
+# No credentials are hardcoded: UUID and XHTTP_PATH come from the
+# environment; when unset, random values are generated at start.
+PORT=${PORT:-8080}
+UUID=${UUID:-$(cat /proc/sys/kernel/random/uuid)}
+XHTTP_PATH=${XHTTP_PATH:-/xh-$(cut -c1-8 /proc/sys/kernel/random/uuid)}
 cat > /app/config.json <<EOF
 {
 "log": { "loglevel": "warning"},
@@ -14,20 +13,13 @@ cat > /app/config.json <<EOF
 "port": ${PORT},
 "protocol": "vless",
 "settings": {
-"clients": [ { "id": "${UUID}", "flow": "xtls-rprx-vision"}],
+"clients": [ { "id": "${UUID}", "flow": ""}],
 "decryption": "none"
 },
 "streamSettings": {
-"network": "raw",
-"security": "reality",
-"realitySettings": {
-"show": false,
-"dest": "${REALITY_DEST}",
-"xver": 0,
-"serverNames": ["${REALITY_SNI}"],
-"privateKey": "${REALITY_PRIVATE_KEY}",
-"shortIds": ["${REALITY_SHORT_ID}"]
-}
+"network": "xhttp",
+"security": "none",
+"xhttpSettings": { "path": "${XHTTP_PATH}", "mode": "auto"}
 },
 "sniffing": { "enabled": true, "destOverride": ["http", "tls"]}
 }
@@ -35,4 +27,6 @@ cat > /app/config.json <<EOF
 "outbounds": [ { "protocol": "freedom"}]
 }
 EOF
+echo "[pudding] UUID: ${UUID}"
+echo "[pudding] XHTTP path: ${XHTTP_PATH}"
 exec /app/xray run -c /app/config.json

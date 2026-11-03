@@ -7,37 +7,41 @@
  * (identical semantics to entrypoint.sh used by the Docker image) and
  * launches the xray binary as a child process.
  *
- * The service is VLESS + REALITY (XTLS Vision flow) over raw TCP.
- * REALITY requires the host platform to pass raw TCP traffic through
- * to the process on the listen port; HTTP reverse proxies cannot be used.
+ * The service is VLESS + XHTTP over plain HTTP, designed to run behind
+ * a platform edge / reverse proxy that terminates TLS (the client
+ * connects to the edge with TLS; see README).
+ *
+ * NO credentials are hardcoded in this repository:
  *
  * Environment variables:
- *   PORT                  Listen port            (default: 443)
- *   UUID                  VLESS client UUID      (default: see below)
- *   REALITY_PRIVATE_KEY   REALITY x25519 private key (server-side secret)
- *   REALITY_PUBLIC_KEY    REALITY x25519 public key  (client-side, for links)
- *   REALITY_SNI           Camouflage SNI         (default: www.microsoft.com)
- *   REALITY_DEST          Camouflage destination (default: www.microsoft.com:443)
- *   REALITY_SHORT_ID      REALITY short ID       (default: see below)
+ *   PORT        Listen port   (default: 8080)
+ *   UUID        VLESS client UUID. If unset, a random UUID is generated
+ *               at every start and printed to the log.
+ *   XHTTP_PATH  XHTTP path. If unset, a random path is generated at
+ *               every start and printed to the log.
+ *
+ * For a stable client configuration, set UUID and XHTTP_PATH in the
+ * platform's environment variables.
  */
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const { spawn } = require("child_process");
 const { ensureXray } = require("./fetch-xray");
 
 const ROOT_DIR = __dirname;
 const CONFIG_PATH = path.join(ROOT_DIR, "config.json");
 
-const PORT = parseInt(process.env.PORT || "443", 10);
-const UUID = process.env.UUID || "aacdae76-688f-4746-9468-df13708f7104";
-const REALITY_PRIVATE_KEY =
-  process.env.REALITY_PRIVATE_KEY || "KNu8j493DpynCz81fHguz2su6R0KZD38LfscfdP_Vko";
-const REALITY_PUBLIC_KEY =
-  process.env.REALITY_PUBLIC_KEY || "ktJSuz5AFdmzEEO8f3G3fDWuStJPP-rJ35_-GJkfUwM";
-const REALITY_SNI = process.env.REALITY_SNI || "www.microsoft.com";
-const REALITY_DEST = process.env.REALITY_DEST || "www.microsoft.com:443";
-const REALITY_SHORT_ID = process.env.REALITY_SHORT_ID || "6b36dc2b7df3ac0a";
+const PORT = parseInt(process.env.PORT || "8080", 10);
+const UUID = process.env.UUID || crypto.randomUUID();
+const XHTTP_PATH_RAW =
+  process.env.XHTTP_PATH || `/xh-${crypto.randomBytes(4).toString("hex")}`;
+const XHTTP_PATH = XHTTP_PATH_RAW.startsWith("/")
+  ? XHTTP_PATH_RAW
+  : `/${XHTTP_PATH_RAW}`;
+const UUID_FROM_ENV = Boolean(process.env.UUID);
+const PATH_FROM_ENV = Boolean(process.env.XHTTP_PATH);
 
 function buildConfig() {
   return {
@@ -48,19 +52,15 @@ function buildConfig() {
         port: PORT,
         protocol: "vless",
         settings: {
-          clients: [{ id: UUID, flow: "xtls-rprx-vision" }],
+          clients: [{ id: UUID, flow: "" }],
           decryption: "none",
         },
         streamSettings: {
-          network: "raw",
-          security: "reality",
-          realitySettings: {
-            show: false,
-            dest: REALITY_DEST,
-            xver: 0,
-            serverNames: [REALITY_SNI],
-            privateKey: REALITY_PRIVATE_KEY,
-            shortIds: [REALITY_SHORT_ID],
+          network: "xhttp",
+          security: "none",
+          xhttpSettings: {
+            path: XHTTP_PATH,
+            mode: "auto",
           },
         },
         sniffing: { enabled: true, destOverride: ["http", "tls"] },
@@ -74,9 +74,13 @@ async function main() {
   const xrayPath = await ensureXray();
 
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(buildConfig(), null, 2));
-  console.log(`[pudding] Starting Xray (VLESS + REALITY) on 0.0.0.0:${PORT}`);
-  console.log(`[pudding] SNI/dest: ${REALITY_SNI} (${REALITY_DEST}), shortId: ${REALITY_SHORT_ID}`);
-  console.log(`[pudding] Client public key (pbk): ${REALITY_PUBLIC_KEY}`);
+  console.log(`[pudding] Starting Xray (VLESS + XHTTP) on 0.0.0.0:${PORT}`);
+  console.log(
+    `[pudding] UUID: ${UUID}${UUID_FROM_ENV ? "" : " (randomly generated, set env UUID to fix it)"}`
+  );
+  console.log(
+    `[pudding] XHTTP path: ${XHTTP_PATH}${PATH_FROM_ENV ? "" : " (randomly generated, set env XHTTP_PATH to fix it)"}`
+  );
 
   const child = spawn(xrayPath, ["run", "-c", CONFIG_PATH], {
     stdio: "inherit",

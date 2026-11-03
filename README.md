@@ -7,98 +7,88 @@
 ![Xray-core](https://img.shields.io/badge/Powered%20by-Xray--core-blue)
 
 一个基于 [Xray-core](https://github.com/XTLS/Xray-core) 的轻量代理服务，使用
-**VLESS + REALITY**（XTLS Vision 流控） over 原始 TCP。REALITY 借用真实知名站点的
-TLS 握手特征进行伪装，无需域名证书即可获得与真实 TLS 一致的外观，是目前
-安全性与兼容性的主流组合。
+**VLESS + XHTTP** 传输。XHTTP 是 Xray 官方为 HTTP 转发 / CDN / PaaS 边缘
+场景设计的传输方式（WebSocket 的继任者），流量以普通 HTTPS 请求的形式
+到达平台边缘、再转发给应用，天然适配只提供 HTTP(S) 入口的托管平台。
 
 支持两种运行形态，配置语义完全一致：
 
-- **Docker 模式**——仓库自带 `Dockerfile`，适用于 VPS 及任何能直达容器端口的平台。
-- **Node.js 模式**——面向 Buildpack 类平台：平台检测到 `package.json` 后自动
-  安装并用 Node.js 启动，二进制由安装脚本自动下载（零运行时依赖）。
+- **Node.js 模式**——面向 Buildpack 类 PaaS（如 infrlo、Heroku 风格平台）：
+  平台检测到 `package.json` 后自动安装并用 Node.js 启动，二进制由安装
+  脚本自动下载（零运行时依赖）。
+- **Docker 模式**——仓库自带 `Dockerfile`，适用于 VPS 及各类容器平台
+  （前面需有 TLS 终结层，如平台边缘、反向代理或 CDN）。
 
-## ⚠️ 部署前提（重要）
+## 🔐 凭据管理（设计要点）
 
-REALITY 工作在原始 TCP 层，**要求宿主平台把公网端口的原始 TCP 流量直达服务
-进程**，并且不能在中间终结 TLS。因此：
+**本仓库不写死任何凭据。** UUID 与 XHTTP 路径的来源只有两个：
 
-- ✅ 适用：VPS / 独立服务器、支持原始 TCP 端口映射的容器平台；
-- ❌ 不适用：只提供 HTTP(S) 反向代理入口的 PaaS（其边缘会终结 TLS 并按
-  HTTP 转发，REALITY 握手无法穿过）。
+1. 平台的环境变量（`UUID`、`XHTTP_PATH`）——推荐做法，重启不变；
+2. 都不设置时，服务在每次启动时**随机生成**，并打印到启动日志中。
+
+因此同一份代码可以被任何人部署，各自的凭据互不相同、且不出现在代码里。
 
 ## 特性
 
-- VLESS 入站 + REALITY 传输安全 + `xtls-rprx-vision` 流控，出站为 `freedom` 直连
-- 无需自备域名与证书：REALITY 借用目标站点（如 `www.microsoft.com`）的握手特征
-- 全部配置来自环境变量：端口、UUID、REALITY 密钥对、伪装 SNI/目标、shortId
-- Node.js 模式零运行时依赖，Xray 官方二进制在安装时自动下载（纯标准库实现），
-  启动时缺失会自动补下载
+- VLESS 入站 + XHTTP 传输（`mode=auto`），出站为 `freedom` 直连
+- 凭据零写死：环境变量注入或启动时随机生成
+- Node.js 模式零运行时依赖，Xray 官方二进制在安装时自动下载（纯标准库
+  实现），启动时缺失会自动补下载
 - MIT 开源协议；中文文档为默认，英文版见 [README.en.md](README.en.md)
 
 ## 工作原理
 
-1. 启动器（Docker 模式为 `entrypoint.sh`，Node.js 模式为 `index.js`）根据
-   环境变量生成 Xray 配置。
-2. Xray 监听 `0.0.0.0:$PORT`（默认 443）。客户端发起 TLS 风格握手时，
-   REALITY 用 x25519 密钥对与 shortId 完成身份验证；未通过验证的连接会被
-   无缝转发到伪装目标站点，外观与访问真实站点无异。
-3. 通过验证的连接按 VLESS 协议（Vision 流控）承载流量，经 `freedom` 出站直连。
+1. 启动器（Node.js 模式为 `index.js`，Docker 模式为 `entrypoint.sh`）
+   读取环境变量、生成 Xray 配置（缺省凭据在此刻随机生成）。
+2. 客户端以 TLS 连接平台边缘的 443 端口，边缘终结 TLS 后，将带有约定
+   路径的 HTTP 请求转发给应用的 `$PORT`。
+3. Xray 在该路径上处理 XHTTP 会话，按 VLESS 协议承载流量、经 `freedom`
+   出站直连；其余路径返回 404。
+
+注：加密由“客户端 ↔ 平台边缘”这一段的 TLS 提供，请只在能提供有效证书
+的平台/域名上使用。
 
 ## 部署
 
-### 方式 A — Docker（推荐）
-
-```bash
-docker build -t pudding .
-docker run -d --name pudding \
-  -p 443:443 \
-  -e UUID=<你的UUID> \
-  -e REALITY_PRIVATE_KEY=<你的私钥> \
-  -e REALITY_SHORT_ID=<你的shortId> \
-  pudding
-```
-
-### 方式 B — Node.js（要求平台支持原始 TCP 端口）
+### 方式 A — Node.js PaaS（Buildpack 平台）
 
 1. 将本仓库推送到你的 Git 托管平台并在目标平台关联仓库；
 2. 构建命令 `npm install`，启动命令 `npm start`（`postinstall` 会自动
    下载 Xray 二进制）；
-3. 确认平台将公网 TCP 端口直达应用的 `$PORT`，再按需设置环境变量并部署。
+3. 在平台的环境变量中设置 `UUID` 与 `XHTTP_PATH`（用 `xray uuid` 和
+   随机字符串生成，或留空由服务随机生成后从日志读取）；
+4. 部署。平台注入的 `PORT` 会被自动采用。
+
+### 方式 B — Docker（前面需有 TLS 终结层）
+
+```bash
+docker build -t pudding .
+docker run -d --name pudding \
+  -p 8080:8080 \
+  -e UUID=<你的UUID> \
+  -e XHTTP_PATH=<你的路径> \
+  pudding
+```
 
 ## 配置
 
-| 变量                  | 默认值                       | 说明                                   |
-|-----------------------|------------------------------|----------------------------------------|
-| `PORT`                | `443`                        | 监听端口                               |
-| `UUID`                | 见 `index.js` / `Dockerfile` | VLESS 客户端 UUID，等同访问凭证        |
-| `REALITY_PRIVATE_KEY` | 见 `index.js` / `Dockerfile` | REALITY x25519 私钥（服务端保密）      |
-| `REALITY_PUBLIC_KEY`  | 见 `index.js`                | REALITY x25519 公钥（客户端链接中的 `pbk`） |
-| `REALITY_SNI`         | `www.microsoft.com`          | 伪装 SNI，需与目标站点一致             |
-| `REALITY_DEST`        | `www.microsoft.com:443`      | 伪装目标（需支持 TLS 1.3）             |
-| `REALITY_SHORT_ID`    | 见 `index.js` / `Dockerfile` | REALITY shortId（十六进制字符串）      |
-
-生成新的密钥对与参数：
-
-```bash
-xray x25519          # 生成 REALITY 密钥对（PrivateKey / PublicKey）
-xray uuid            # 生成 UUID
-openssl rand -hex 8  # 生成 shortId
-```
-
-**生产环境务必通过环境变量覆盖 `UUID`、`REALITY_PRIVATE_KEY` 与
-`REALITY_SHORT_ID` 的默认值**——默认值写在公开代码中，任何人可见。
+| 变量          | 默认值                 | 说明                                        |
+|---------------|------------------------|---------------------------------------------|
+| `PORT`        | `8080`（或平台注入）   | 监听端口                                    |
+| `UUID`        | 启动时随机生成         | VLESS 客户端 UUID，等同访问凭证             |
+| `XHTTP_PATH`  | 启动时随机生成         | XHTTP 路径，如 `/xh-xxxxxxxx`               |
 
 ## 客户端使用
 
-支持 VLESS + REALITY 的客户端均可连接（如 v2rayN、v2rayNG、Shadowrocket、
-Streisand、Nekoray、sing-box 等）。分享链接格式：
+支持 VLESS + XHTTP 的客户端可连接（如较新版本的 v2rayN、v2rayNG、
+Nekoray、sing-box 等）。分享链接格式：
 
 ```
-vless://<UUID>@<服务器地址>:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com&fp=chrome&pbk=<公钥>&sid=<shortId>&type=tcp#pudding
+vless://<UUID>@<你的应用域名>:443?encryption=none&security=tls&type=xhttp&path=<XHTTP_PATH>&mode=auto#pudding
 ```
 
-要点：`flow` 必须为 `xtls-rprx-vision`；`security=reality`；`fp`（指纹）
-建议 `chrome`；`pbk`、`sid`、`sni` 必须与服务端配置完全一致。
+要点：`security=tls`（TLS 由平台边缘提供）；`type=xhttp`；`mode=auto`；
+`path` 必须与服务端一致（链接中 `/` 建议编码为 `%2F`）。
 
 ## 项目结构
 
@@ -118,16 +108,15 @@ vless://<UUID>@<服务器地址>:443?encryption=none&flow=xtls-rprx-vision&secur
 
 ```bash
 npm install   # postinstall 会一并下载 Xray 二进制
-npm start     # 监听 $PORT（默认 443）
+npm start     # 监听 $PORT（默认 8080）；未设凭据时看日志里的随机值
 ```
 
 ## 安全说明
 
-- `UUID` 与 `REALITY_PRIVATE_KEY` 是核心凭证：私钥只应出现在服务端配置中，
-  绝不要写进客户端链接；客户端只需要公钥（`pbk`）。
-- 怀疑参数泄露时，重新生成密钥对/UUID 并通过环境变量更新、重启服务即可轮换。
-- 伪装目标应选择支持 TLS 1.3、长期稳定的大型站点，并保持 `REALITY_SNI`
-  与目标域名一致。
+- UUID 与路径是访问凭证：通过环境变量设置时请勿提交进任何仓库；
+  使用随机生成时，请从启动日志中妥善记录。
+- 轮换凭据：修改环境变量并重启（或直接重启以重新随机生成）即可。
+- 务必让客户端走 TLS（443 + 有效证书），不要暴露明文 HTTP 入口给公网。
 - Xray 二进制只从 XTLS 官方仓库获取；建议关注上游版本更新。
 
 ## 开源协议
