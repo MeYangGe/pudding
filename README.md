@@ -1,3 +1,3 @@
-# xray-node
+# pudding
 
-This repository contains a Dockerfile and entrypoint.sh for a containerized WebSocket service deployed via a public-URL host.
+A small containerized web service (Dockerfile + entrypoint.sh), deployed via a public-URL host.
