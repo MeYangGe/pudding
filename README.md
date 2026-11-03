@@ -63,6 +63,13 @@ XHTTP 入站并不可靠（会话路径会被破坏，日志报 `failed to find 
 default "path" config`），WebSocket 则没有这个问题；用一个显式的
 HTTP 路由器分流行为最可预测。
 
+## 让 AI Agent 帮你部署
+
+如果你使用 AI 助手（Agent），把本仓库交给它、并让它**先读
+[AGENT.md](AGENT.md)**：里面有原样部署的完整实测流程（含 infrlo 的
+逐步操作）、部署后双通道验证方法、要交付的链接格式和故障对照表，
+照着做即可，不需要改任何代码。
+
 ## 部署
 
 ### 方式 A — Node.js PaaS（Buildpack 平台）
@@ -127,6 +134,7 @@ vless://<UUID>@<你的应用域名>:443?encryption=none&security=tls&type=ws&hos
 .
 ├── README.md       # 中文文档（默认）
 ├── README.en.md    # English documentation
+├── AGENT.md        # 给 AI Agent 的部署手册（原样部署的实测流程）
 ├── index.js        # Node.js 入口（npm start）：转交 router.js
 ├── router.js       # 实现：生成 Xray 配置、拉起 Xray、按路径分流
 ├── fetch-xray.js   # 下载并解压官方 Xray 二进制（纯标准库）

@@ -79,6 +79,15 @@ path gets mangled and Xray logs `failed to find the default "path"
 config`), while WebSocket was unaffected; an explicit HTTP router is the
 most predictable option.
 
+## Deploying With an AI Agent
+
+If you use an AI assistant (agent), hand it this repository and have it
+read [AGENT.md](AGENT.md) **first**: it contains the complete,
+field-tested runbook for deploying the project as-is (including
+step-by-step instructions for infrlo), the two-transport verification
+procedure, the exact share-link formats to deliver, and a
+troubleshooting table. No code changes are needed.
+
 ## Deployment
 
 ### Option A — Node.js PaaS (buildpack platforms)
@@ -146,6 +155,7 @@ response for protocol data).
 .
 ├── README.md       # Chinese documentation (default)
 ├── README.en.md    # English documentation
+├── AGENT.md        # Deployment runbook for AI agents (deploy as-is, field-tested)
 ├── index.js        # Node.js entry point (npm start): delegates to router.js
 ├── router.js       # Implementation: renders Xray config, launches Xray, routes by path
 ├── fetch-xray.js   # Downloads & extracts the official Xray binary (stdlib only)
