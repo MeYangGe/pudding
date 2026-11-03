@@ -88,6 +88,10 @@ step-by-step instructions for infrlo), the two-transport verification
 procedure, the exact share-link formats to deliver, and a
 troubleshooting table. No code changes are needed.
 
+Or simply copy this one sentence to your agent:
+
+> Deploy this repository for me (https://github.com/suda1088/pudding): first read AGENT.md in full and follow it exactly to deploy the project as-is — do not modify any code, set credentials only via environment variables, use the field-tested infrlo route it describes, pause and let me handle any login or verification step myself instead of asking me for passwords or bank cards, and once both the XHTTP and WebSocket transports pass the live tests, send me the two share links, their QR codes, and the tested exit city — if anything gets stuck, report the platform's original error honestly.
+
 ## Deployment
 
 ### Option A — Node.js PaaS (buildpack platforms)
