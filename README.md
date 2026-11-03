@@ -66,13 +66,13 @@ HTTP 路由器分流行为最可预测。
 ## 让 AI Agent 帮你部署
 
 如果你使用 AI 助手（Agent），把本仓库交给它、并让它**先读
-[AGENT.md](AGENT.md)**：里面有原样部署的完整实测流程（含 infrlo 的
+[DEPLOY.md](DEPLOY.md)**：里面有原样部署的完整实测流程（含 infrlo 的
 逐步操作）、部署后双通道验证方法、要交付的链接格式和故障对照表，
 照着做即可，不需要改任何代码。
 
 复制下面这一句话发给你的 Agent 即可：
 
-> 帮我部署这个仓库（https://github.com/suda1088/pudding）：先完整读一遍里面的 AGENT.md 并严格照它原样部署、不要改任何代码、凭据只用环境变量设置，平台用它实测过的 infrlo 路线，遇到登录或验证码就停下来让我本人操作、不要向我索要密码或银行卡，部署后把 XHTTP 和 WebSocket 两条通道都实测通过了，再把两条链接、各自的二维码和出口城市发我，卡住就如实告诉我平台的原始报错。
+> 帮我部署这个仓库（https://github.com/suda1088/pudding）：先完整读一遍里面的 DEPLOY.md 并严格照它原样部署、不要改任何代码、凭据只用环境变量设置，平台用它实测过的 infrlo 路线，遇到登录或验证码就停下来让我本人操作、不要向我索要密码或银行卡，部署后把 XHTTP 和 WebSocket 两条通道都实测通过了，再把两条链接、各自的二维码和出口城市发我，卡住就如实告诉我平台的原始报错。
 
 ## 部署
 
@@ -138,7 +138,7 @@ vless://<UUID>@<你的应用域名>:443?encryption=none&security=tls&type=ws&hos
 .
 ├── README.md       # 中文文档（默认）
 ├── README.en.md    # English documentation
-├── AGENT.md        # 给 AI Agent 的部署手册（原样部署的实测流程）
+├── DEPLOY.md       # 部署手册：给 AI Agent 的原样部署实测流程
 ├── index.js        # Node.js 入口（npm start）：转交 router.js
 ├── router.js       # 实现：生成 Xray 配置、拉起 Xray、按路径分流
 ├── fetch-xray.js   # 下载并解压官方 Xray 二进制（纯标准库）

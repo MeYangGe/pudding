@@ -82,7 +82,7 @@ most predictable option.
 ## Deploying With an AI Agent
 
 If you use an AI assistant (agent), hand it this repository and have it
-read [AGENT.md](AGENT.md) **first**: it contains the complete,
+read [DEPLOY.md](DEPLOY.md) **first**: it contains the complete,
 field-tested runbook for deploying the project as-is (including
 step-by-step instructions for infrlo), the two-transport verification
 procedure, the exact share-link formats to deliver, and a
@@ -90,7 +90,7 @@ troubleshooting table. No code changes are needed.
 
 Or simply copy this one sentence to your agent:
 
-> Deploy this repository for me (https://github.com/suda1088/pudding): first read AGENT.md in full and follow it exactly to deploy the project as-is — do not modify any code, set credentials only via environment variables, use the field-tested infrlo route it describes, pause and let me handle any login or verification step myself instead of asking me for passwords or bank cards, and once both the XHTTP and WebSocket transports pass the live tests, send me the two share links, their QR codes, and the tested exit city — if anything gets stuck, report the platform's original error honestly.
+> Deploy this repository for me (https://github.com/suda1088/pudding): first read DEPLOY.md in full and follow it exactly to deploy the project as-is — do not modify any code, set credentials only via environment variables, use the field-tested infrlo route it describes, pause and let me handle any login or verification step myself instead of asking me for passwords or bank cards, and once both the XHTTP and WebSocket transports pass the live tests, send me the two share links, their QR codes, and the tested exit city — if anything gets stuck, report the platform's original error honestly.
 
 ## Deployment
 
@@ -159,7 +159,7 @@ response for protocol data).
 .
 ├── README.md       # Chinese documentation (default)
 ├── README.en.md    # English documentation
-├── AGENT.md        # Deployment runbook for AI agents (deploy as-is, field-tested)
+├── DEPLOY.md       # Deployment runbook for AI agents (deploy as-is, field-tested)
 ├── index.js        # Node.js entry point (npm start): delegates to router.js
 ├── router.js       # Implementation: renders Xray config, launches Xray, routes by path
 ├── fetch-xray.js   # Downloads & extracts the official Xray binary (stdlib only)
