@@ -1,0 +1,1 @@
+{"description":"A lightweight WebSocket proxy service powered by Xray-core (VLESS + WebSocket). Runs as a Node.js application on buildpack-based PaaS platforms, or as a Docker container.","engines":{"node":">=18"},"license":"MIT","main":"index.js","name":"pudding","private":true,"scripts":{"postinstall":"node fetch-xray.js","start":"node index.js"},"version":"1.1.0"}

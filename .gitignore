@@ -1,0 +1,7 @@
+node_modules/
+xray
+xray.zip
+*.dat
+config.json
+.env
+npm-debug.log*
