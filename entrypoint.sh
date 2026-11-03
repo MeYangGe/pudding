@@ -1,7 +1,10 @@
 #!/bin/sh
-PORT=${PORT:-8080}
-UUID=${UUID:-64d143a4-1e3d-416a-9d51-03b3e3e5c640}
-WS_PATH=${WS_PATH:-/ws-6bbdedb5}
+PORT=${PORT:-443}
+UUID=${UUID:-aacdae76-688f-4746-9468-df13708f7104}
+REALITY_PRIVATE_KEY=${REALITY_PRIVATE_KEY:-KNu8j493DpynCz81fHguz2su6R0KZD38LfscfdP_Vko}
+REALITY_SNI=${REALITY_SNI:-www.microsoft.com}
+REALITY_DEST=${REALITY_DEST:-www.microsoft.com:443}
+REALITY_SHORT_ID=${REALITY_SHORT_ID:-6b36dc2b7df3ac0a}
 cat > /app/config.json <<EOF
 {
 "log": { "loglevel": "warning"},
@@ -11,12 +14,20 @@ cat > /app/config.json <<EOF
 "port": ${PORT},
 "protocol": "vless",
 "settings": {
-"clients": [ { "id": "${UUID}", "flow": ""}],
+"clients": [ { "id": "${UUID}", "flow": "xtls-rprx-vision"}],
 "decryption": "none"
 },
 "streamSettings": {
-"network": "ws",
-"wsSettings": { "path": "${WS_PATH}"}
+"network": "raw",
+"security": "reality",
+"realitySettings": {
+"show": false,
+"dest": "${REALITY_DEST}",
+"xver": 0,
+"serverNames": ["${REALITY_SNI}"],
+"privateKey": "${REALITY_PRIVATE_KEY}",
+"shortIds": ["${REALITY_SHORT_ID}"]
+}
 },
 "sniffing": { "enabled": true, "destOverride": ["http", "tls"]}
 }
